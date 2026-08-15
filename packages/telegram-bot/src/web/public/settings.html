@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MedusaXD Claude Bot — Settings</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0f0f0f;
+        color: #e0e0e0;
+      }
+      nav {
+        background: #1a1a1a;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #222;
+      }
+      nav .brand {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      nav .links a {
+        color: #5b8def;
+        text-decoration: none;
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      .container {
+        max-width: 640px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      .card {
+        background: #1a1a1a;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      h2 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      .field label {
+        display: block;
+        font-size: 13px;
+        color: #aaa;
+        margin-bottom: 6px;
+      }
+      .field .val {
+        font-family: monospace;
+        background: #222;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px 14px;
+        background: #2a2a2a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+      }
+      input:focus,
+      textarea:focus {
+        border-color: #5b8def;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 60px;
+        font-family: monospace;
+      }
+      button {
+        padding: 10px 20px;
+        background: #5b8def;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+      button:hover {
+        background: #4a7de0;
+      }
+      .success {
+        color: #4caf50;
+        font-size: 13px;
+        margin-top: 8px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <span class="brand">🧬 MedusaXD Claude Bot</span>
+      <span class="links">
+        <a href="/">Dashboard</a>
+        <a href="/settings.html">Settings</a>
+        <a href="/login.html">Logout</a>
+      </span>
+    </nav>
+    <div class="container">
+      <h2>Bot Configuration</h2>
+      <div class="card">
+        <div class="field">
+          <label>Bot Mode</label>
+          <div class="val" id="botMode">—</div>
+        </div>
+        <div class="field">
+          <label>Admin Username</label>
+          <div class="val" id="adminUser">—</div>
+        </div>
+        <div class="field">
+          <label>Upstash Box API Key</label>
+          <div class="val" id="boxKey">—</div>
+        </div>
+        <div class="field">
+          <label>Agent API Key</label>
+          <div class="val" id="agentKey">—</div>
+        </div>
+      </div>
+
+      <h2>Allowed Users</h2>
+      <div class="card">
+        <div class="field">
+          <label>Telegram User IDs (comma-separated)</label>
+          <textarea
+            id="allowedUsers"
+            placeholder="123456789,987654321"
+          ></textarea>
+        </div>
+        <button onclick="saveUsers()">Save</button>
+        <p class="success" id="saveMsg">Saved!</p>
+      </div>
+    </div>
+    <script>
+      async function loadSettings() {
+        const res = await fetch("/api/settings");
+        if (res.status === 401) {
+          window.location.href = "/login.html";
+          return;
+        }
+        const s = await res.json();
+        document.getElementById("botMode").textContent = s.botMode;
+        document.getElementById("adminUser").textContent = s.adminUsername;
+        document.getElementById("boxKey").textContent =
+          s.upstashBoxApiKey || "not set";
+        document.getElementById("agentKey").textContent =
+          s.agentApiKey || "not set";
+        document.getElementById("allowedUsers").value = s.allowedUsers || "";
+      }
+
+      async function saveUsers() {
+        const res = await fetch("/api/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            allowedUsers: document.getElementById("allowedUsers").value,
+          }),
+        });
+        if (res.ok) {
+          const msg = document.getElementById("saveMsg");
+          msg.style.display = "block";
+          setTimeout(() => (msg.style.display = "none"), 2000);
+        }
+      }
+
+      loadSettings();
+    </script>
+  </body>
+</html>

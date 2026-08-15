@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MedusaXD Claude Bot — Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #0f0f0f;
+        color: #e0e0e0;
+      }
+      nav {
+        background: #1a1a1a;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #222;
+      }
+      nav .brand {
+        font-size: 18px;
+        font-weight: 700;
+      }
+      nav .links a {
+        color: #5b8def;
+        text-decoration: none;
+        margin-left: 20px;
+        font-size: 14px;
+      }
+      nav .links a:hover {
+        text-decoration: underline;
+      }
+      .container {
+        max-width: 960px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .stat-card {
+        background: #1a1a1a;
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .stat-card .label {
+        color: #888;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+      .stat-card .value {
+        font-size: 28px;
+        font-weight: 700;
+      }
+      .stat-card .value.green {
+        color: #4caf50;
+      }
+      .stat-card .value.blue {
+        color: #5b8def;
+      }
+      .stat-card .value.amber {
+        color: #ffb74d;
+      }
+      h2 {
+        font-size: 18px;
+        margin-bottom: 16px;
+      }
+      .box-table {
+        width: 100%;
+        background: #1a1a1a;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .box-table th,
+      .box-table td {
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 14px;
+      }
+      .box-table th {
+        background: #222;
+        color: #aaa;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .box-table tr {
+        border-bottom: 1px solid #222;
+      }
+      .box-table tr:last-child {
+        border-bottom: none;
+      }
+      .status {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .status.idle {
+        background: #4caf50;
+      }
+      .status.running {
+        background: #5b8def;
+      }
+      .status.paused {
+        background: #888;
+      }
+      .status.creating {
+        background: #ffb74d;
+      }
+      .status.error {
+        background: #ef5b5b;
+      }
+      .btn-sm {
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .btn-danger {
+        background: #3a1a1a;
+        color: #ef5b5b;
+      }
+      .btn-danger:hover {
+        background: #4a2020;
+      }
+      .empty {
+        color: #666;
+        text-align: center;
+        padding: 40px;
+      }
+      #loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <span class="brand">🧬 MedusaXD Claude Bot</span>
+      <span class="links">
+        <a href="/">Dashboard</a>
+        <a href="/settings.html">Settings</a>
+        <a href="/login.html">Logout</a>
+      </span>
+    </nav>
+    <div class="container">
+      <div class="stats" id="stats">
+        <div class="stat-card">
+          <div class="label">Active Boxes</div>
+          <div class="value green" id="boxCount">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Running</div>
+          <div class="value blue" id="runningCount">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Paused</div>
+          <div class="value amber" id="pausedCount">—</div>
+        </div>
+      </div>
+      <h2>Boxes</h2>
+      <div id="loading">Loading...</div>
+      <table class="box-table" id="boxTable" style="display: none">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>ID</th>
+            <th>Model</th>
+            <th>Runtime</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="boxBody"></tbody>
+      </table>
+      <p class="empty" id="empty" style="display: none">No boxes found.</p>
+    </div>
+    <script>
+      async function loadBoxes() {
+        const res = await fetch("/api/boxes");
+        if (res.status === 401) {
+          window.location.href = "/login.html";
+          return;
+        }
+        const { boxes } = await res.json();
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("boxCount").textContent = boxes.length;
+        document.getElementById("runningCount").textContent = boxes.filter(
+          (b) => b.status === "running" || b.status === "idle",
+        ).length;
+        document.getElementById("pausedCount").textContent = boxes.filter(
+          (b) => b.status === "paused",
+        ).length;
+
+        if (boxes.length === 0) {
+          document.getElementById("empty").style.display = "block";
+          return;
+        }
+
+        const tbody = document.getElementById("boxBody");
+        tbody.innerHTML = boxes
+          .map(
+            (b) => `
+        <tr>
+          <td><span class="status ${b.status}"></span>${b.status}</td>
+          <td><code>${(b.name || b.id).slice(0, 20)}</code></td>
+          <td>${b.model || "—"}</td>
+          <td>${b.runtime || "—"}</td>
+          <td>${new Date(b.created_at * 1000).toLocaleDateString()}</td>
+          <td><button class="btn-sm btn-danger" onclick="deleteBox('${b.id}')">Delete</button></td>
+        </tr>
+      `,
+          )
+          .join("");
+        document.getElementById("boxTable").style.display = "table";
+      }
+
+      async function deleteBox(id) {
+        if (!confirm("Delete this box? This is irreversible.")) return;
+        await fetch(`/api/boxes/${id}`, { method: "DELETE" });
+        loadBoxes();
+      }
+
+      loadBoxes();
+    </script>
+  </body>
+</html>

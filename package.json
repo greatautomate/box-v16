@@ -1,0 +1,25 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --parallel dev",
+    "test": "pnpm -r test",
+    "test:integration": "vitest run -c packages/sdk/vitest.integration.config.ts",
+    "changeset": "changeset",
+    "ci:version": "changeset version",
+    "ci:tag": "changeset tag",
+    "lint": "pnpm -r lint",
+    "ci:lint": "pnpm -r ci:lint"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.4",
+    "dotenv": "^17.3.1",
+    "vitest": "^4.1.2"
+  }
+}

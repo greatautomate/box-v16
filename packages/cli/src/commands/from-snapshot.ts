@@ -1,0 +1,84 @@
+import { Box } from "@upstash/box";
+import type { AgentConfig, Runtime } from "@upstash/box";
+import { resolveToken } from "../auth.js";
+import { resolveAgentApiKey } from "../agent-key.js";
+import { startRepl } from "../repl/terminal.js";
+
+function resolveCliAgentHarness(harness: string | undefined): string | undefined {
+  if (!harness) return undefined;
+  switch (harness) {
+    case "claude-code":
+    case "codex":
+    case "opencode":
+    case "cursor":
+      return harness;
+    case "custom":
+      console.error(
+        "custom agent boxes require customHarness config and are not supported by this CLI command yet. Use the SDK or REST API.",
+      );
+      process.exit(1);
+    default:
+      console.error(`Unknown agent harness: ${harness}`);
+      process.exit(1);
+  }
+}
+
+interface FromSnapshotFlags {
+  token?: string;
+  runtime?: string;
+  agentModel?: string;
+  agentHarness?: string;
+  /** @deprecated Use `agentHarness` instead. */
+  agentProvider?: string;
+  /** @deprecated Use `agentProvider` instead. */
+  agentRunner?: string;
+  agentApiKey?: string | true;
+  gitToken?: string;
+  env?: string[];
+}
+
+export async function fromSnapshotCommand(
+  snapshotId: string,
+  flags: FromSnapshotFlags,
+): Promise<void> {
+  const apiKey = resolveToken(flags.token);
+  const agentHarness = resolveCliAgentHarness(
+    flags.agentHarness ?? flags.agentProvider ?? flags.agentRunner,
+  );
+
+  const env: Record<string, string> = {};
+  if (flags.env) {
+    for (const e of flags.env) {
+      const idx = e.indexOf("=");
+      if (idx === -1) {
+        console.error(`Invalid env format: ${e} (expected KEY=VAL)`);
+        process.exit(1);
+      }
+      env[e.slice(0, idx)] = e.slice(idx + 1);
+    }
+  }
+
+  if (flags.agentModel && !agentHarness) {
+    console.error(
+      "agent harness is required when --agent-model is set. Use --agent-harness (preferred), or the deprecated aliases --agent-provider / --agent-runner.",
+    );
+    process.exit(1);
+  }
+
+  console.log("Creating box from snapshot...");
+  const box = await Box.fromSnapshot(snapshotId, {
+    apiKey,
+    runtime: flags.runtime as Runtime,
+    agent: flags.agentModel
+      ? ({
+          harness: agentHarness!,
+          model: flags.agentModel,
+          apiKey: resolveAgentApiKey(flags.agentApiKey),
+        } as AgentConfig)
+      : undefined,
+    git: flags.gitToken ? { token: flags.gitToken } : undefined,
+    env: Object.keys(env).length > 0 ? env : undefined,
+  });
+
+  await startRepl(box);
+}

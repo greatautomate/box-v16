@@ -1,0 +1,26 @@
+import type { Box } from "@upstash/box";
+import type { BoxREPLEvent } from "../types.js";
+
+/**
+ * /model [provider] [model]
+ *
+ * With args:  directly set the model via the config API.
+ * Without args: yield a model-picker event for the terminal/UI to handle.
+ */
+export async function* handleModel(box: Box, args: string): AsyncGenerator<BoxREPLEvent> {
+  const parts = args.trim().split(/\s+/);
+
+  if (parts.length < 2) {
+    yield {
+      type: "error",
+      message:
+        "Usage: /model <provider> <model>  (e.g. /model claude-code anthropic/claude-opus-4-5)",
+    };
+    return;
+  }
+
+  const model = parts[1]!;
+
+  await box.configureModel(model);
+  yield { type: "log", message: `Model changed to ${model}` };
+}

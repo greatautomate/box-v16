@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: medusaxd-claude-bot
+    runtime: node
+    plan: starter
+    # @upstash/box is a published npm dependency (not a workspace package), so
+    # it is installed by `pnpm install` and must not be built here — filtering
+    # for it matches no project and fails the build. Only build the bot.
+    buildCommand: npm i -g pnpm && pnpm install --no-frozen-lockfile --ignore-scripts && pnpm --filter @medusaxd/claude-bot build
+    startCommand: node packages/telegram-bot/dist/main.js
+    envVars:
+      - key: BOT_MODE
+        value: webhook
+      - key: WEBHOOK_URL
+        generateValue: false
+      - key: TELEGRAM_BOT_TOKEN
+        generateValue: false
+      - key: MONGODB_URI
+        generateValue: false
+      - key: UPSTASH_BOX_API_KEY
+        generateValue: false
+      - key: AGENT_API_KEY
+        generateValue: false
+      - key: ADMIN_TELEGRAM_IDS
+        generateValue: false
+      - key: ADMIN_USERNAME
+        value: admin
+      # Accepts a bcrypt hash ($2a$/$2b$/$2y$…) or, for quick setups, plaintext.
+      - key: ADMIN_PASSWORD
+        generateValue: false
+      - key: JWT_SECRET
+        generateValue: true
+      # Verifies Telegram webhook calls (X-Telegram-Bot-Api-Secret-Token).
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      # Required to enable the box → bot notification webhook (/api/webhook/box).
+      - key: BOX_WEBHOOK_SECRET
+        generateValue: true
+      - key: PORT
+        value: "3000"
+      # MTProto (optional) — enables /zip and /download for files >50 MB
+      # by routing through a user-account session. Get api_id / api_hash
+      # from https://my.telegram.org, then run scripts/generate-session.ts
+      # locally to produce TELEGRAM_USER_SESSION. Leave blank to disable.
+      - key: TELEGRAM_API_ID
+        sync: false
+      - key: TELEGRAM_API_HASH
+        sync: false
+      - key: TELEGRAM_USER_SESSION
+        sync: false
